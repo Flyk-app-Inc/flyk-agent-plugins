@@ -8,4 +8,4 @@ Check whether the `flyk` MCP server (from the `flyk-mcp-plugin` plugin) is conne
 - If it's **not** connected, walk the user through fixing it:
   1. In Claude Desktop: **Settings → Plugins → Flyk**, make sure it's enabled, then reopen the app or toggle it off/on.
   2. In Claude Code: run `/mcp` to see connection status, or restart the session. If it's still missing, confirm the plugin is installed with `/plugin list`.
-  3. If the server still won't connect, it may be a transient outage on `staging-api.flyk.app` — try again in a few minutes.
+  3. If the server still won't connect, it may be a transient outage on the Flyk MCP host — try again in a few minutes.

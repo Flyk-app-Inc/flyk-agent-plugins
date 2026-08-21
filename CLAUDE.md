@@ -54,4 +54,4 @@ python3 .github/scripts/check_version_bump.py <base-ref> <head-ref>
 
 **Naming rules enforced by tests:** marketplace and plugin `name` fields must be kebab-case and must match across `marketplace.json` and `plugin.json`.
 
-**Before shipping to real customers:** `.mcp.json`'s `url` still points at the staging host (`staging-api.flyk.app`), not production — see the "Publishing checklist" in the root `README.md`.
+**Before shipping to real customers:** `.mcp.json`'s `url` still points at the Flyk MCP staging host, not production — see the "Publishing checklist" in the root `README.md`.

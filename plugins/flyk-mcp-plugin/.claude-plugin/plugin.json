@@ -1,7 +1,7 @@
 {
   "name": "flyk-mcp-plugin",
   "displayName": "Flyk",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Official Flyk integration for Claude — adds the Flyk MCP server plus handy commands and a skill for working with your Flyk projects.",
   "author": {
     "name": "Flyk",
