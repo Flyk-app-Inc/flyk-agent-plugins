@@ -8,5 +8,9 @@
     "MD036": false
   },
   "globs": ["**/*.md"],
-  "ignores": ["**/node_modules/**", ".superpowers/**"]
+  // Both entries below are local-only scratch trees, not repo content: they
+  // are never committed and won't exist in a fresh clone. .superpowers/ is
+  // transient working scratch used during development sessions and isn't
+  // referenced anywhere else in this repo.
+  "ignores": ["**/node_modules/**", "**/.superpowers/**"]
 }

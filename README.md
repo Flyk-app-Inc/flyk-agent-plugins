@@ -1,6 +1,6 @@
 # flyk-agent-plugins
 
-Claude plugin marketplace for Flyk. Lets customers install the **Flyk MCP server** (plus companion commands and a skill) straight into Claude Desktop or Claude Code — no manual `claude_desktop_config.json` editing required.
+Claude plugin marketplace for Flyk. Lets customers install the **Flyk MCP server** (plus companion commands and a skill) into Claude Desktop or Claude Code via this marketplace, or point any other MCP client straight at the server URL — no manual `claude_desktop_config.json` editing required.
 
 ## Repo layout
 
@@ -18,6 +18,8 @@ plugins/
     skills/
       flyk-quickstart/
         SKILL.md              # tells Claude when/how to use the Flyk tools
+    clients/
+      chatgpt-instructions.md # paste-in guidance for ChatGPT, which can't install the skill
     README.md                 # plugin-specific docs
 ```
 
@@ -67,6 +69,8 @@ Other clients have no marketplace to install from; they take the server URL dire
 https://staging-api.flyk.app/mcp
 ```
 
+This is currently a staging host and will change before general availability; if you've added it as a custom connector, you'll need to remove and re-add it once that happens.
+
 It speaks Streamable HTTP and needs no authentication headers.
 
 #### ChatGPT
@@ -79,7 +83,7 @@ ChatGPT calls these custom connectors, and they live behind developer mode:
 Two things worth knowing before you start:
 
 - Custom connectors require a paid plan — Plus, Pro, Business, Enterprise, or Education.
-- ChatGPT shows a warning that custom connectors run third-party code on your behalf. That warning is standard for every custom connector and is not specific to Flyk.
+- ChatGPT shows a warning about connecting unverified third-party connectors. That warning is standard for every custom connector and is not specific to Flyk.
 
 OpenAI moves these settings around from time to time. If the steps don't match what you see, [OpenAI's developer mode article](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt) is the current authority.
 

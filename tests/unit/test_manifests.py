@@ -97,6 +97,9 @@ class PluginManifestTests(unittest.TestCase):
             if isinstance(e.get("source"), str)
         ]
         cls.marketplace_names = {e["name"] for e in marketplace["plugins"]}
+        cls.marketplace_entries_by_source = {
+            e["name"]: e for e in marketplace["plugins"] if isinstance(e.get("source"), str)
+        }
 
     def test_plugin_json_required_fields_and_name_match(self):
         for plugin_dir in self.plugin_dirs:
@@ -111,6 +114,28 @@ class PluginManifestTests(unittest.TestCase):
                 )
                 self.assertIn("description", manifest)
                 self.assertTrue(manifest["description"].strip())
+
+    def test_plugin_json_version_matches_marketplace_entry(self):
+        """Companion to the name-match check above: marketplace.json's
+        per-plugin `version` is a convenience copy of plugin.json's real
+        version, and nothing else enforces they agree — a stale marketplace
+        entry would otherwise pass CI silently (check_version_bump.py only
+        reads plugin.json). A marketplace entry is allowed to omit
+        `version` entirely (it isn't a required field); but if present, it
+        must match plugin.json exactly rather than silently drifting."""
+        for plugin_dir in self.plugin_dirs:
+            with self.subTest(plugin=plugin_dir.name):
+                manifest = load_json(plugin_dir / ".claude-plugin" / "plugin.json")
+                entry = self.marketplace_entries_by_source[manifest["name"]]
+                if "version" not in entry:
+                    continue
+                self.assertEqual(
+                    entry["version"],
+                    manifest.get("version"),
+                    f"marketplace.json's version for {manifest['name']} "
+                    f"({entry['version']!r}) does not match its plugin.json "
+                    f"version ({manifest.get('version')!r})",
+                )
 
     def test_plugin_is_open_access_no_user_config(self):
         """Regression test: this plugin was deliberately made open / no API

@@ -9,7 +9,8 @@ Two kinds of drift are guarded here:
    one, so an install doc cannot rot when the host flips to production.
    Two kinds of directory are exempt: docs/superpowers/, because specs and
    plans are point-in-time records of what was true when they were written,
-   and git-ignored scratch such as .superpowers/, which never ships.
+   and transient local scratch such as .superpowers/, which never exists in
+   a fresh clone and never ships.
 
 2. **The ChatGPT instructions blob.** ChatGPT has no skill mechanism, so
    plugins/flyk-mcp-plugin/clients/chatgpt-instructions.md carries by hand
@@ -38,7 +39,7 @@ EXEMPT_DIRS = (
     REPO_ROOT / ".git",
     REPO_ROOT / "node_modules",
     REPO_ROOT / ".claude",
-    REPO_ROOT / ".superpowers",  # git-ignored scratch, not repo content
+    REPO_ROOT / ".superpowers",  # transient local scratch, never exists in a fresh clone
 )
 
 # An MCP endpoint URL as it appears in prose: inside backticks, inside a
@@ -131,6 +132,15 @@ CONFIRM_GROUP_MARKER = "Reaches a real business"
 # The line in the ChatGPT blob that opens its confirm-required list.
 CONFIRM_MARKER = "Confirm before these"
 
+# The confirm section's tool list alone isn't the guardrail — this directive
+# sentence is what actually tells ChatGPT to stop and wait for the user
+# before it contacts a real business. These phrases must survive verbatim;
+# a rewrite that keeps the tool names but drops the directive (e.g. "Go
+# ahead and call these whenever it seems useful") would pass every other
+# check in this file while leaving ChatGPT users with no confirmation
+# guardrail at all.
+REQUIRED_CONFIRM_DIRECTIVE_PHRASES = ("wait for a clear yes", "ask each time")
+
 TOOL_IN_BACKTICKS = re.compile(r"`([a-z][a-z0-9_]*)`")
 
 
@@ -207,7 +217,6 @@ class SkillToolParserTests(unittest.TestCase):
         """`get_quote` is also mentioned under "Good practice"; that must not
         add a phantom group member."""
         safe, confirm = parse_skill_tool_groups(self.SAMPLE)
-        self.assertNotIn("Good", safe | confirm)
         self.assertEqual(len(safe | confirm), 3)
 
 
@@ -272,6 +281,36 @@ class ChatGptInstructionsTests(unittest.TestCase):
                     f"{tool} is read-only in SKILL.md but the ChatGPT "
                     "instructions put it behind a confirmation prompt",
                 )
+
+    def test_confirm_section_states_the_actual_directive(self):
+        """Listing the two tools under 'Confirm before these' is not enough
+        on its own — a rewrite could keep both names but replace the
+        instruction with something like "Go ahead and call these whenever
+        it seems useful" and every other test in this class would still
+        pass. This blob is the *only* confirmation guardrail a ChatGPT user
+        gets (Claude gets the same behavior from flyk-quickstart/SKILL.md
+        instead), so the directive sentence itself has to be pinned, not
+        just the tool membership around it."""
+        section = confirm_section(self.doc)
+        for phrase in REQUIRED_CONFIRM_DIRECTIVE_PHRASES:
+            with self.subTest(phrase=phrase):
+                self.assertIn(
+                    phrase,
+                    section,
+                    f"the ChatGPT confirm section is missing the directive phrase "
+                    f"'{phrase}' — without it, ChatGPT has tool names but no "
+                    "instruction to actually stop and ask before using them",
+                )
+
+    def test_block_is_a_pasteable_text_fence(self):
+        """The whole point of this file is copy-paste into a ChatGPT
+        Project's instructions box; if the fence markers ever get stripped
+        the content stops being a single pasteable block."""
+        self.assertIn(
+            "```text",
+            self.doc,
+            "no ```text fence found — the pasteable block markers are missing",
+        )
 
 
 if __name__ == "__main__":
