@@ -1,0 +1,6 @@
+{
+  "flyk": {
+    "type": "http",
+    "url": "https://staging-api.flyk.app/mcp"
+  }
+}

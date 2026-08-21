@@ -1,0 +1,31 @@
+name: test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit:
+    name: Unit tests (manifests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - run: python3 -m unittest discover -s tests/unit -v
+
+  integration:
+    name: Integration tests (live MCP server)
+    runs-on: ubuntu-latest
+    # Network-dependent on a third-party staging host — don't fail PRs on
+    # its downtime. Run manually via workflow_dispatch, or drop this `if:`
+    # once the plugin points at a production endpoint you control the SLA for.
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - run: python3 -m unittest discover -s tests/integration -v

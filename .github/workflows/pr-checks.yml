@@ -1,0 +1,65 @@
+name: pr-checks
+
+# Gates specific to this being a Claude plugin marketplace: every PR must
+# ship valid manifests, clean markdown, a bumped plugin version if a plugin
+# changed, and no secrets. Fast tests (unit/integration) live in test.yml —
+# this workflow is about repo/release hygiene, not test coverage.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  json-validate:
+    name: JSON manifests parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate every JSON file
+        run: |
+          status=0
+          while IFS= read -r -d '' f; do
+            python3 -m json.tool "$f" > /dev/null || { echo "::error file=$f::invalid JSON"; status=1; }
+          done < <(find . -name "*.json" -not -path "./.git/*" -print0)
+          exit "$status"
+
+  markdown-lint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # Config: .markdownlint-cli2.jsonc at repo root
+      - run: npx --yes markdownlint-cli2 "**/*.md"
+
+  version-bump-check:
+    name: Changed plugins bumped their version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          python3 .github/scripts/check_version_bump.py \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}"
+
+  secret-scan:
+    name: Scan for committed secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          version=$(curl -fsSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
+            | grep -m1 '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz" \
+            | tar xz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+      - run: gitleaks detect --source . --no-git --redact -v

@@ -1,0 +1,27 @@
+{
+  "name": "flyk-marketplace",
+  "owner": {
+    "name": "Flyk",
+    "email": "support@flyk.app",
+    "url": "https://flyk.app"
+  },
+  "description": "Official Claude plugin marketplace for Flyk — install the Flyk MCP server and companion commands/skills.",
+  "plugins": [
+    {
+      "name": "flyk-mcp-plugin",
+      "source": "./plugins/flyk-mcp-plugin",
+      "description": "Connects Claude to your Flyk account via MCP, plus setup/status commands and a skill for working with Flyk projects.",
+      "version": "1.0.0",
+      "displayName": "Flyk",
+      "author": {
+        "name": "Flyk",
+        "email": "support@flyk.app"
+      },
+      "homepage": "https://flyk.app/docs/claude",
+      "repository": "https://github.com/Flyk-app-Inc/flyk-ai-tool-skills",
+      "license": "MIT",
+      "keywords": ["flyk", "mcp", "productivity", "integration"],
+      "category": "productivity"
+    }
+  ]
+}
