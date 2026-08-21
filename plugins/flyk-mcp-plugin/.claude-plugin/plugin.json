@@ -9,7 +9,7 @@
     "url": "https://flyk.app"
   },
   "homepage": "https://flyk.app/docs/claude",
-  "repository": "https://github.com/Flyk-app-Inc/flyk-ai-tool-skills",
+  "repository": "https://github.com/Flyk-app-Inc/flyk-agent-plugins",
   "license": "MIT",
   "keywords": ["flyk", "mcp", "integration", "productivity"],
 

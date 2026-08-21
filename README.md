@@ -1,4 +1,4 @@
-# flyk-ai-tool-skills
+# flyk-agent-plugins
 
 Claude plugin marketplace for Flyk. Lets customers install the **Flyk MCP server** (plus companion commands and a skill) straight into Claude Desktop or Claude Code — no manual `claude_desktop_config.json` editing required.
 
@@ -35,12 +35,19 @@ CI runs on every PR: [`test.yml`](.github/workflows/test.yml) runs the unit laye
 
 ## Installing (customer instructions)
 
-**Claude Desktop:** click **+** → **Plugins** → **Add marketplace**, paste this repo's URL, then install **Flyk** from the list. That's it — no account or API key needed, it works right away.
+**Claude Desktop:**
+
+1. Open Claude Desktop and click the **+** button next to the message box.
+2. Select **Plugins** → **Add marketplace**.
+3. Paste this repo's URL: `https://github.com/Flyk-app-Inc/flyk-agent-plugins`
+4. Find **Flyk** in the marketplace list and click **Install**.
+
+That's it — no account or API key needed, it works right away. Open a new chat and ask Claude to find or book a provider to try it out.
 
 **Claude Code:**
 
 ```bash
-/plugin marketplace add Flyk-app-Inc/flyk-ai-tool-skills
+/plugin marketplace add Flyk-app-Inc/flyk-agent-plugins
 /plugin install flyk-mcp-plugin@flyk-marketplace
 ```
 
