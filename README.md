@@ -35,6 +35,10 @@ CI runs on every PR: [`test.yml`](.github/workflows/test.yml) runs the unit laye
 
 ## Installing (customer instructions)
 
+No account, sign-up, or API key is needed on any client — the Flyk MCP server is open access.
+
+### Claude — through this marketplace
+
 **Claude Desktop:**
 
 1. Open Claude Desktop and click the **+** button next to the message box.
@@ -42,7 +46,7 @@ CI runs on every PR: [`test.yml`](.github/workflows/test.yml) runs the unit laye
 3. Paste this repo's URL: `https://github.com/Flyk-app-Inc/flyk-agent-plugins`
 4. Find **Flyk** in the marketplace list and click **Install**.
 
-That's it — no account or API key needed, it works right away. Open a new chat and ask Claude to find or book a provider to try it out.
+That's it — it works right away. Open a new chat and ask Claude to find or book a provider to try it out.
 
 **Claude Code:**
 
@@ -52,6 +56,38 @@ That's it — no account or API key needed, it works right away. Open a new chat
 ```
 
 Then run `/flyk-mcp-plugin:setup` any time to confirm the connection.
+
+Installing this way also brings the plugin's commands and the `flyk-quickstart` skill, which is what makes Claude confirm with you before it messages or books with a real business.
+
+### Any other MCP client — paste the URL
+
+Other clients have no marketplace to install from; they take the server URL directly. The Flyk MCP endpoint is:
+
+```text
+https://staging-api.flyk.app/mcp
+```
+
+It speaks Streamable HTTP and needs no authentication headers.
+
+#### ChatGPT
+
+ChatGPT calls these custom connectors, and they live behind developer mode:
+
+1. In ChatGPT on the web, open **Settings → Apps → Advanced settings** and turn on **Developer mode**.
+2. Go to the **Plugins** page, click **+**, and paste the URL above.
+
+Two things worth knowing before you start:
+
+- Custom connectors require a paid plan — Plus, Pro, Business, Enterprise, or Education.
+- ChatGPT shows a warning that custom connectors run third-party code on your behalf. That warning is standard for every custom connector and is not specific to Flyk.
+
+OpenAI moves these settings around from time to time. If the steps don't match what you see, [OpenAI's developer mode article](https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt) is the current authority.
+
+**One important difference from Claude:** ChatGPT has no way to install the `flyk-quickstart` skill, so it will not automatically ask before messaging or booking with a real provider. [`plugins/flyk-mcp-plugin/clients/chatgpt-instructions.md`](plugins/flyk-mcp-plugin/clients/chatgpt-instructions.md) has a short block to paste into a ChatGPT Project's instructions that restores that guidance. Do that before you use Flyk to contact anyone.
+
+#### Other clients
+
+Any other MCP client — Cursor, VS Code, and similar — takes the same URL wherever it registers remote MCP servers. The same caveat applies: only the Claude plugin ships the skill, so on other clients the ChatGPT instructions block above is worth adapting.
 
 ## Pull request checks
 
@@ -70,7 +106,8 @@ These are recommendations, not automatically enforced — turn them into require
 
 ## Publishing checklist (for us)
 
-- [ ] Point `.mcp.json`'s `url` at the production MCP endpoint before shipping (currently `https://staging-api.flyk.app/mcp`, staging).
+- [ ] Point [`plugins/flyk-mcp-plugin/.mcp.json`](plugins/flyk-mcp-plugin/.mcp.json)'s `url` at the production MCP endpoint before shipping — it is still on staging. Every install doc is checked against that file by [`tests/unit/test_client_docs.py`](tests/unit/test_client_docs.py), so the docs have to move in the same commit.
+- [ ] Tell ChatGPT users to remove and re-add their custom connector after that switch. They pasted the URL into their own ChatGPT settings, so unlike a Claude plugin update we cannot move it for them — it needs a customer-facing announcement, not a silent change.
 - [ ] Keep `version` in `plugin.json` bumped on every release — customers on a pinned version won't get updates otherwise.
 - [ ] Repo must stay public (or customers need repo access) since `/plugin marketplace add` clones it directly.
 - [ ] Consider a `renames` entry in `marketplace.json` if we ever rename `flyk-mcp-plugin`, so existing installs migrate cleanly.
