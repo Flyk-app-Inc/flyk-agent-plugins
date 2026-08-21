@@ -11,7 +11,7 @@
       "name": "flyk-mcp-plugin",
       "source": "./plugins/flyk-mcp-plugin",
       "description": "Connects Claude to your Flyk account via MCP, plus setup/status commands and a skill for working with Flyk projects.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "displayName": "Flyk",
       "author": {
         "name": "Flyk",
