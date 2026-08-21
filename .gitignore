@@ -3,3 +3,5 @@ __pycache__/
 **/evals/results/
 tests-results.json
 .coverage
+coverage.json
+coverage_comment.md

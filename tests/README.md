@@ -28,12 +28,14 @@ FLYK_MCP_SKIP_NETWORK=1 python3 -m unittest discover -s tests/integration -v
 
 ## Coverage gate
 
-[`.github/workflows/test.yml`](../.github/workflows/test.yml)'s `coverage` job runs the unit layer under [coverage.py](https://coverage.readthedocs.io/), scoped to [`.github/scripts`](../.github/scripts) — the only actual application code in this repo (everything else is declarative JSON/Markdown; the test files themselves aren't a coverage target). It fails the job (`coverage report --fail-under=95`) if coverage drops below 95%, and posts the report both to the job's [step summary](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary) and as a sticky PR comment (updated in place on every push, not reposted). Run it locally with:
+[`.github/workflows/test.yml`](../.github/workflows/test.yml)'s `coverage` job runs the unit layer under [coverage.py](https://coverage.readthedocs.io/) with `--branch`, scoped to [`.github/scripts`](../.github/scripts) — the only actual application code in this repo (everything else is declarative JSON/Markdown; the test files themselves aren't a coverage target). It fails the job (`coverage report --fail-under=95`) if statement+branch coverage drops below 95%, and posts the result as a markdown table — file, statements, missed lines, branches, partial branches, branch %, overall cover % — both to the job's [step summary](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary) and as a sticky PR comment (updated in place on every push, not reposted). The table is built by [`.github/ci/render_coverage_table.py`](../.github/ci/render_coverage_table.py), which deliberately lives outside `.github/scripts/` so it isn't itself swept into the gate it renders. Run it locally with:
 
 ```bash
 pip install coverage
-coverage run --source=.github/scripts -m unittest discover -s tests/unit -v
+coverage run --branch --source=.github/scripts -m unittest discover -s tests/unit -v
 coverage report -m
+# or, for the same markdown table CI posts:
+coverage json -o coverage.json && python3 .github/ci/render_coverage_table.py coverage.json
 ```
 
 ## CI

@@ -38,20 +38,14 @@ jobs:
         # Scoped to .github/scripts: the only actual application code in
         # this repo (everything else is declarative JSON/Markdown per
         # CLAUDE.md). The test files themselves aren't a coverage target.
-        run: coverage run --source=.github/scripts -m unittest discover -s tests/unit -v
+        # --branch also tracks branch coverage (both arms of every if/for),
+        # a stricter signal than statement coverage alone.
+        run: coverage run --branch --source=.github/scripts -m unittest discover -s tests/unit -v
       - name: Build the coverage report
         run: |
-          THRESHOLD=95
-          PERCENT=$(coverage json -o - | python3 -c "import json,sys; print(round(json.load(sys.stdin)['totals']['percent_covered'], 1))")
-          if awk -v p="$PERCENT" -v t="$THRESHOLD" 'BEGIN{exit !(p>=t)}'; then STATUS="✅ pass"; else STATUS="❌ fail"; fi
-          {
-            echo "<!-- coverage-report -->"
-            echo "### Code coverage: ${PERCENT}% — gate is ${THRESHOLD}% (${STATUS})"
-            echo
-            echo '```text'
-            coverage report -m
-            echo '```'
-          } | tee coverage_comment.md >> "$GITHUB_STEP_SUMMARY"
+          coverage json -o coverage.json
+          python3 .github/ci/render_coverage_table.py coverage.json --threshold 95 -o coverage_comment.md
+          cat coverage_comment.md >> "$GITHUB_STEP_SUMMARY"
       - name: Comment coverage on the PR
         # Only PR events have an issue_number to comment on; push/dispatch
         # runs still get the job summary above.
