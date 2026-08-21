@@ -51,15 +51,27 @@ jobs:
   secret-scan:
     name: Scan for committed secrets
     runs-on: ubuntu-latest
+    env:
+      # Pinned deliberately (not resolved from the GitHub API at run time):
+      # an unauthenticated "latest release" lookup is rate-limited per
+      # runner IP and makes the gate non-reproducible across PRs. Bump this
+      # in its own PR when you want a newer gitleaks/ruleset.
+      GITLEAKS_VERSION: "8.30.1"
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install gitleaks
         run: |
-          version=$(curl -fsSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
-            | grep -m1 '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
-          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz" \
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             | tar xz gitleaks
           sudo mv gitleaks /usr/local/bin/gitleaks
-      - run: gitleaks detect --source . --no-git --redact -v
+      - name: Scan the PR's commit range
+        # --log-opts scans git history for this range, not just the final
+        # working tree, so a secret added then removed earlier in the same
+        # PR is still caught (fetch-depth: 0 above is what makes this
+        # range resolvable).
+        run: |
+          gitleaks detect --source . \
+            --log-opts="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" \
+            --redact -v

@@ -26,17 +26,57 @@ def changed_files(base, head):
     return [line for line in out.splitlines() if line]
 
 
+def _ref_exists(ref):
+    return subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+        capture_output=True,
+    ).returncode == 0
+
+
+def _path_exists_at(ref, path):
+    return subprocess.run(
+        ["git", "cat-file", "-e", f"{ref}:{path}"], capture_output=True
+    ).returncode == 0
+
+
 def read_json_at(ref, path):
-    try:
-        text = git("show", f"{ref}:{path}")
-    except subprocess.CalledProcessError:
+    if not _ref_exists(ref):
+        # A bad/unresolvable ref is a real error, not "file doesn't exist at
+        # this ref" — let it raise instead of silently treating the plugin
+        # as new/deleted (which would skip the version-bump check).
+        raise RuntimeError(f"not a valid ref: {ref!r}")
+    if not _path_exists_at(ref, path):
         return None
+    text = git("show", f"{ref}:{path}")
     return json.loads(text)
 
 
+def local_plugin_manifests():
+    """Plugin manifest paths, driven by marketplace.json (the same source
+    of truth tests/unit/test_manifests.py uses) rather than a filesystem
+    glob, so the two can't drift apart as plugins are added/moved. Only
+    local path sources are covered — see marketplace.json's own comment on
+    that; git/npm/archive-sourced plugins aren't present in this checkout to
+    version-check anyway."""
+    with open(".claude-plugin/marketplace.json", encoding="utf-8") as f:
+        marketplace = json.load(f)
+    paths = []
+    for entry in marketplace.get("plugins", []):
+        source = entry.get("source")
+        if isinstance(source, str) and source.startswith("./"):
+            paths.append((Path(source) / ".claude-plugin" / "plugin.json"))
+    return sorted(p.resolve().relative_to(Path.cwd()) for p in paths)
+
+
 def parse_version(v):
+    # Compare only the numeric dotted-prefix, stripping any prerelease/build
+    # metadata (e.g. "1.2.3-beta.1" -> (1, 2, 3), "1.2.3+build5" -> (1, 2, 3)).
+    # Without this, a version like "1.0.0-beta" fails int() parsing, returns
+    # None, and silently skips the increase check below — letting a real
+    # downgrade like "2.0.0" -> "1.0.0-beta" pass.
+    numeric_prefix = str(v).split("+", 1)[0].split("-", 1)[0]
     try:
-        return tuple(int(x) for x in str(v).split("."))
+        return tuple(int(x) for x in numeric_prefix.split("."))
     except (ValueError, AttributeError):
         return None
 
@@ -49,7 +89,7 @@ def main():
     head = sys.argv[2] if len(sys.argv) > 2 else "HEAD"
 
     changed = changed_files(base, head)
-    plugin_manifests = sorted(Path(".").glob("plugins/*/.claude-plugin/plugin.json"))
+    plugin_manifests = local_plugin_manifests()
     failures = []
 
     for manifest_path in plugin_manifests:

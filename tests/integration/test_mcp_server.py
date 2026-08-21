@@ -63,7 +63,19 @@ def _mcp_call(url: str, method: str, params: dict, request_id: int = 1) -> dict:
         },
     )
     with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+        content_type = resp.headers.get("Content-Type", "")
         body = resp.read().decode("utf-8")
+
+    if "text/event-stream" in content_type:
+        # Streamable-HTTP MCP servers may frame the JSON-RPC response as an
+        # SSE event instead of a bare body — pull the JSON out of its
+        # "data:" line(s) rather than handing the raw SSE frame to
+        # json.loads(), which would raise JSONDecodeError on it.
+        body = "".join(
+            line[len("data:"):].strip()
+            for line in body.splitlines()
+            if line.startswith("data:")
+        )
     return json.loads(body)
 
 
@@ -85,6 +97,17 @@ class FlykMcpServerTests(unittest.TestCase):
                     "clientInfo": {"name": "flyk-plugin-tests", "version": "0.0.1"},
                 },
             )
+        except urllib.error.HTTPError as exc:
+            # HTTPError is a subclass of URLError, so it must be caught
+            # first and treated as a real failure, not a connectivity skip
+            # — an auth requirement (401/403) appearing here is exactly the
+            # "open access" regression this suite exists to catch.
+            raise AssertionError(
+                f"{cls.url} returned HTTP {exc.code} on a request sent with no "
+                "auth — this plugin is meant to be open access. If a real auth "
+                "requirement was added, that's a deliberate design change, not "
+                "a connectivity problem; update this test and the plugin's docs."
+            ) from exc
         except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
             raise unittest.SkipTest(f"{cls.url} unreachable: {exc}")
 

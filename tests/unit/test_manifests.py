@@ -86,9 +86,15 @@ class PluginManifestTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         marketplace = load_json(MARKETPLACE_PATH)
+        # Only local path sources have a plugin.json in this checkout to
+        # test against; a git/npm/archive source (a dict, not a str) is a
+        # valid marketplace.json shape but isn't present on disk here, so
+        # skip it rather than crashing setUpClass (and every test in this
+        # class) on a Path / dict TypeError.
         cls.plugin_dirs = [
             (MARKETPLACE_PATH.parent.parent / e["source"]).resolve()
             for e in marketplace["plugins"]
+            if isinstance(e.get("source"), str)
         ]
         cls.marketplace_names = {e["name"] for e in marketplace["plugins"]}
 
@@ -118,6 +124,29 @@ class PluginManifestTests(unittest.TestCase):
                     manifest,
                     "plugin.json declares userConfig — this plugin is meant to be open access",
                 )
+
+    def test_mcp_server_declares_no_auth(self):
+        """Companion to the userConfig check above: open access also means
+        .mcp.json itself carries no auth material (a header, a bearer
+        token, an API-key-shaped field) — the mechanism this plugin
+        actually had removed earlier in its history."""
+        auth_like = re.compile(r"auth|api[_-]?key|token|secret|bearer", re.IGNORECASE)
+        for plugin_dir in self.plugin_dirs:
+            mcp_path = plugin_dir / ".mcp.json"
+            if not mcp_path.is_file():
+                continue
+            with self.subTest(plugin=plugin_dir.name):
+                servers = load_json(mcp_path)
+                for server_name, config in servers.items():
+                    self.assertNotIn(
+                        "headers", config, f"{server_name} declares headers — not open access"
+                    )
+                    for key in config:
+                        self.assertNotRegex(
+                            key,
+                            auth_like,
+                            f"{server_name}.{key} looks auth-related — not open access",
+                        )
 
     def test_declared_component_paths_exist(self):
         for plugin_dir in self.plugin_dirs:

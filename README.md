@@ -48,7 +48,7 @@ Then run `/flyk-mcp-plugin:setup` any time to confirm the connection.
 
 ## Pull request checks
 
-[`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) runs on every PR and blocks merge on:
+[`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) runs on every PR and reports on:
 
 | Check | What it catches |
 | --- | --- |
