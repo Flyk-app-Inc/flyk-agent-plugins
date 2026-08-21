@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-Render a coverage.py JSON report (`coverage json -o coverage.json`) as a
-markdown table for the PR comment / job summary posted by the `coverage`
-job in .github/workflows/test.yml.
+Render a coverage.py JSON report (`coverage json -o coverage.json`) as an
+aggregated markdown summary for the PR comment / job summary posted by the
+`coverage` job in .github/workflows/test.yml. Reports the repo-wide totals
+only, not a per-file breakdown — coverage.py's own text report
+(`coverage report -m`) already gives the file-by-file view when someone
+wants to dig in locally.
 
 Deliberately lives outside .github/scripts/, which is what that job's
 `coverage run --source=.github/scripts` measures — this script is CI glue,
@@ -16,31 +19,24 @@ import sys
 
 
 def render(data: dict, threshold: float) -> str:
-    def row(name: str, s: dict) -> str:
-        cover = f"{s['percent_covered']:.1f}%"
-        branch_pct = s.get("percent_branches_covered")
-        branch_cover = f"{branch_pct:.1f}%" if branch_pct is not None else "—"
-        return (
-            f"| {name} | {s['num_statements']} | {s['missing_lines']} | "
-            f"{s.get('num_branches', 0)} | {s.get('num_partial_branches', 0)} | "
-            f"{branch_cover} | {cover} |"
-        )
-
     totals = data["totals"]
     percent = totals["percent_covered"]
     status = "✅ pass" if percent >= threshold else "❌ fail"
+    branch_pct = totals.get("percent_branches_covered")
+    branch_cover = f"{branch_pct:.1f}%" if branch_pct is not None else "—"
 
-    lines = [
-        "<!-- coverage-report -->",
-        f"### Code coverage: {percent:.1f}% — gate is {threshold:.0f}% ({status})",
-        "",
-        "| File | Stmts | Miss | Branch | Partial | Branch % | Cover |",
-        "|---|---|---|---|---|---|---|",
-    ]
-    for filename in sorted(data["files"]):
-        lines.append(row(f"`{filename}`", data["files"][filename]["summary"]))
-    lines.append(row("**TOTAL**", totals))
-    return "\n".join(lines) + "\n"
+    return "\n".join(
+        [
+            "<!-- coverage-report -->",
+            f"### Code coverage: {percent:.1f}% — gate is {threshold:.0f}% ({status})",
+            "",
+            "| Stmts | Miss | Branch | Partial | Branch % | Cover |",
+            "|---|---|---|---|---|---|",
+            f"| {totals['num_statements']} | {totals['missing_lines']} | "
+            f"{totals.get('num_branches', 0)} | {totals.get('num_partial_branches', 0)} | "
+            f"{branch_cover} | {percent:.1f}% |",
+        ]
+    ) + "\n"
 
 
 def main():
