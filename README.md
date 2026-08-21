@@ -31,7 +31,7 @@ Three layers — see [`tests/README.md`](tests/README.md) for the full breakdown
 - **Integration** (`tests/integration/`) — the real MCP server actually answers and still has the tools the plugin assumes. `python3 -m unittest discover -s tests/integration -v`
 - **Eval** (`plugins/flyk-mcp-plugin/evals/`) — Claude, given the real plugin, behaves correctly (searches before recommending, confirms before booking, never mentions an API key). `claude plugin eval ./plugins/flyk-mcp-plugin`
 
-CI runs on every PR: [`test.yml`](.github/workflows/test.yml) runs the unit layer, and [`pr-checks.yml`](.github/workflows/pr-checks.yml) gates JSON validity, markdown lint, a bumped plugin version, and a secret scan — see [Pull request checks](#pull-request-checks) below.
+CI runs on every PR: [`test.yml`](.github/workflows/test.yml) runs the unit layer and a coverage gate (unit tests must cover ≥95% of [`.github/scripts`](.github/scripts), the repo's only actual application code — the report is posted as a PR comment and in the job summary), and [`pr-checks.yml`](.github/workflows/pr-checks.yml) gates JSON validity, markdown lint, a bumped plugin version, and a secret scan — see [Pull request checks](#pull-request-checks) below.
 
 ## Installing (customer instructions)
 
@@ -57,7 +57,9 @@ Then run `/flyk-mcp-plugin:setup` any time to confirm the connection.
 | `version-bump-check` | A plugin's files changed but `plugin.json`'s `version` wasn't bumped (or was lowered) — see [`.github/scripts/check_version_bump.py`](.github/scripts/check_version_bump.py) |
 | `secret-scan` | Accidentally committed credentials, via [gitleaks](https://github.com/gitleaks/gitleaks) |
 
-These are recommendations, not automatically enforced — turn them into required checks under **Settings → Branches → Branch protection rules** for `main` if you want PRs blocked from merging until they pass.
+[`.github/workflows/test.yml`](.github/workflows/test.yml)'s `coverage` job adds one more: unit-test coverage of [`.github/scripts`](.github/scripts) must stay ≥95% (`coverage report --fail-under=95`), with the report posted as a sticky PR comment and in the job summary — see [`tests/README.md`](tests/README.md#coverage-gate).
+
+These are recommendations, not automatically enforced — turn them into required checks under **Settings → Branches → Branch protection rules** for `main` if you want PRs blocked from merging until they pass. That applies to the coverage gate too: a red `coverage` check fails the workflow run, but only blocks merging once it's added as a required check.
 
 ## Publishing checklist (for us)
 

@@ -16,6 +16,76 @@ jobs:
           python-version: "3.x"
       - run: python3 -m unittest discover -s tests/unit -v
 
+  coverage:
+    name: Code coverage (>= 95%)
+    runs-on: ubuntu-latest
+    # Only this job needs to comment on the PR; keep the token scope
+    # minimal rather than widening workflow-level permissions.
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install coverage.py
+        # Pinned to the 7.x line (not an exact patch) so a new major
+        # version can't silently change report format/behavior underneath
+        # this job — bump deliberately when you want a newer major.
+        run: pip install "coverage>=7,<8"
+      - name: Run unit tests under coverage
+        # Scoped to .github/scripts: the only actual application code in
+        # this repo (everything else is declarative JSON/Markdown per
+        # CLAUDE.md). The test files themselves aren't a coverage target.
+        run: coverage run --source=.github/scripts -m unittest discover -s tests/unit -v
+      - name: Build the coverage report
+        run: |
+          THRESHOLD=95
+          PERCENT=$(coverage json -o - | python3 -c "import json,sys; print(round(json.load(sys.stdin)['totals']['percent_covered'], 1))")
+          if awk -v p="$PERCENT" -v t="$THRESHOLD" 'BEGIN{exit !(p>=t)}'; then STATUS="✅ pass"; else STATUS="❌ fail"; fi
+          {
+            echo "<!-- coverage-report -->"
+            echo "### Code coverage: ${PERCENT}% — gate is ${THRESHOLD}% (${STATUS})"
+            echo
+            echo '```text'
+            coverage report -m
+            echo '```'
+          } | tee coverage_comment.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment coverage on the PR
+        # Only PR events have an issue_number to comment on; push/dispatch
+        # runs still get the job summary above.
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('coverage_comment.md', 'utf8');
+            const marker = '<!-- coverage-report -->';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+      - name: Enforce the 95% coverage gate
+        run: coverage report --fail-under=95
+
   integration:
     name: Integration tests (live MCP server)
     runs-on: ubuntu-latest
