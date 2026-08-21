@@ -26,6 +26,18 @@ FLYK_MCP_SKIP_NETWORK=1 python3 -m unittest discover -s tests/integration -v
 - Eval runs call the **real, live** `flyk` MCP server (staging or prod, whatever `.mcp.json` currently points at) and the **real** Claude API — there's no mocking layer, so these cost real tokens and can be affected by staging flakiness. Keep `runs: 1` in the sample cases for that reason; bump it if you want more statistical confidence.
 - Each case lives at `plugins/flyk-mcp-plugin/evals/<case-name>/`, with `prompt.md` (the scenario) and one or more files under `graders/` (the pass/fail criteria). See that directory for the three cases: `find-provider-search`, `confirms-before-booking`, `setup-open-access`.
 
+## Coverage gate
+
+[`.github/workflows/test.yml`](../.github/workflows/test.yml)'s `coverage` job runs the unit layer under [coverage.py](https://coverage.readthedocs.io/) with `--branch`, scoped to [`.github/scripts`](../.github/scripts) — the only actual application code in this repo (everything else is declarative JSON/Markdown; the test files themselves aren't a coverage target). It fails the job (`coverage report --fail-under=95`) if statement+branch coverage drops below 95%, and posts the result as a markdown table — file, statements, missed lines, branches, partial branches, branch %, overall cover % — both to the job's [step summary](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary) and as a sticky PR comment (updated in place on every push, not reposted). The table is built by [`.github/ci/render_coverage_table.py`](../.github/ci/render_coverage_table.py), which deliberately lives outside `.github/scripts/` so it isn't itself swept into the gate it renders. Run it locally with:
+
+```bash
+pip install coverage
+coverage run --branch --source=.github/scripts -m unittest discover -s tests/unit -v
+coverage report -m
+# or, for the same markdown table CI posts:
+coverage json -o coverage.json && python3 .github/ci/render_coverage_table.py coverage.json
+```
+
 ## CI
 
-[`.github/workflows/test.yml`](../.github/workflows/test.yml) runs the unit layer on every push/PR — it's free and needs no secrets. Integration and eval are left as manual/scheduled runs (they need network to a real backend, and eval needs a paid API key), rather than gating every PR on a third-party staging server's uptime.
+[`.github/workflows/test.yml`](../.github/workflows/test.yml) runs the unit layer and the coverage gate above on every push/PR — both are free and need no secrets. Integration and eval are left as manual/scheduled runs (they need network to a real backend, and eval needs a paid API key), rather than gating every PR on a third-party staging server's uptime.
