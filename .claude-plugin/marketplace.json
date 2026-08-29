@@ -11,14 +11,14 @@
       "name": "flyk-mcp-plugin",
       "source": "./plugins/flyk-mcp-plugin",
       "description": "Connects Claude to your Flyk account via MCP, plus setup/status commands and a skill for working with Flyk projects.",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "displayName": "Flyk",
       "author": {
         "name": "Flyk",
         "email": "support@flyk.app"
       },
       "homepage": "https://flyk.app/docs/claude",
-      "repository": "https://github.com/flyk-app-inc/flyk-agent-plugins",
+      "repository": "https://github.com/flyk-app/flyk-agent-plugins",
       "license": "MIT",
       "keywords": ["flyk", "mcp", "productivity", "integration"],
       "category": "productivity"

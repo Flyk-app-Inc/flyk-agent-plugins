@@ -75,7 +75,7 @@ class McpUrlHelperTests(unittest.TestCase):
         )
 
     def test_ignores_urls_that_are_not_mcp_endpoints(self):
-        text = "See https://flyk.app/docs/claude and https://github.com/Flyk-app-Inc/flyk-agent-plugins"
+        text = "See https://flyk.app/docs/claude and https://github.com/flyk-app/flyk-agent-plugins"
         self.assertEqual(find_mcp_urls(text), [])
 
 

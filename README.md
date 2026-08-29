@@ -45,7 +45,7 @@ No account, sign-up, or API key is needed on any client — the Flyk MCP server 
 
 1. Open Claude Desktop and click the **+** button next to the message box.
 2. Select **Plugins** → **Add marketplace**.
-3. Paste this repo's URL: `https://github.com/Flyk-app-Inc/flyk-agent-plugins`
+3. Paste this repo's URL: `https://github.com/flyk-app/flyk-agent-plugins`
 4. Find **Flyk** in the marketplace list and click **Install**.
 
 That's it — it works right away. Open a new chat and ask Claude to find or book a provider to try it out.
